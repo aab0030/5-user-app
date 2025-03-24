@@ -1,33 +1,40 @@
-import { Component, EventEmitter} from '@angular/core';
+import { Component, EventEmitter, OnInit} from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { User } from '../../models/user';
 import { SharingDataService } from '../../services/sharing-data.service';
-import { Route, Router } from '@angular/router';
+import { ActivatedRoute, Route } from '@angular/router';
 
 @Component({
   selector: 'user-form',
   imports: [FormsModule],
   templateUrl: './user-form.component.html'
 })
-export class UserFormComponent {
+export class UserFormComponent implements OnInit{
   
   user: User;
 
   constructor(
-    private router: Router,
-    private sharingData: SharingDataService) {{
-
-    if(this.router.getCurrentNavigation()?.extras.state) {
-      this.user = this.router.getCurrentNavigation()?.extras.state!['user'];
-    } else {
+    private route: ActivatedRoute,
+    private sharingData: SharingDataService) {
       this.user = new User();
-    }
-  }}
+
+  }
+  ngOnInit(): void {
+
+    this.sharingData.selectUserEventEmitter.subscribe(user => this.user = user);
+
+    // Capturar el parametro que nos pasan por la ruta
+    this.route.paramMap.subscribe(params => {
+      const id: number = parseInt(params.get('id') || '0');
+      if (id > 0) {
+        this.sharingData.findUserByIdEventEmitter.emit(id);   
+      }
+    })
+  }
 
   onSubmit(userform: NgForm): void {
     if(userform.valid) {
       this.sharingData.newUserEventEmitter.emit(this.user);
-      console.log(this.user);
     }
     userform.reset();
     userform.resetForm();
